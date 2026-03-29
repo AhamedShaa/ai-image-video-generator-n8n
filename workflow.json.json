@@ -1,0 +1,1628 @@
+{
+  "name": "Generate AI Videos from Text Prompts with KIE.AI Veo3 3",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        -48
+      ],
+      "id": "1e949c70-4440-44ad-b3f1-ba4f4cfe53e6",
+      "name": "Telegram Trigger",
+      "webhookId": "56c12b5e-89ae-44e9-a17d-4d8209b04f54",
+      "credentials": {
+        "telegramApi": {
+          "id": "XLKk5TXG2awtcsbO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://api.telegram.org/bot{{ $vars.telegrambot_key }}/getFile?\nfile_id={{ $json.message.photo[2].file_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -592,
+        -64
+      ],
+      "id": "b03b3803-a276-4c98-97f4-2b6df79370a3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d02966cb-9ceb-4408-b9a8-e0921a0298a1",
+              "name": "img_url",
+              "value": "=https://api.telegram.org/file/bot{{ $vars.telegrambot_key }}/{{ $json.result.file_path }}",
+              "type": "string"
+            },
+            {
+              "id": "46b43dd3-8574-450c-b187-a8c957e7d4db",
+              "name": "prompt",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        -48
+      ],
+      "id": "0cedd743-753c-4b47-afb9-826d26c07820",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.img_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -224,
+        -48
+      ],
+      "id": "b828359e-8bb1-43e3-85ee-afc754fc4229",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "outputData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -112
+      ],
+      "id": "758d100c-2bef-4b38-b615-dbb5f20c1314",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "AIzaSyANpjvNMXCCIHNMK4_CirTUaiMv-jqlIxA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"inline_data\": {\n            \"mime_type\": \"image/png\",\n            \"data\": \"{{ $json.outputData }}\"\n          }\n        },\n        {\n          \"text\": \"{{ $json.prompt }}\"\n        }\n      ]\n    }\n  ],\n  \"generation_config\": {\n    \"response_modalities\": [\"IMAGE\"]\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        -16
+      ],
+      "id": "c1fa7166-d682-4580-8ecd-60abbdf2f719",
+      "name": "Google Nano banana API call"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst base64Data =\n  items[0]?.json?.candidates[0]?.content?.parts.slice(-1)[0]?.inlineData?.data;\n\nreturn [{ json: { base64Data } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "91e9af36-6c8b-467a-b172-26ff0283f398",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "71778fff-51b1-4b0a-9f8b-0d9e743a64b7",
+              "name": "Image64String",
+              "value": "={{ $json.base64Data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1056,
+        -16
+      ],
+      "id": "9d9f03aa-ff5f-43d2-b4fc-e7791fc34e5c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "Image64String",
+        "binaryPropertyName": "GoogleCreatedImage",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        -16
+      ],
+      "id": "ad9b515d-4a51-41ed-b187-d6a7ff47d178",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "binaryPropertyName": "GoogleCreatedImage",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1472,
+        0
+      ],
+      "id": "bc642529-edaa-4d70-a475-743d7e18d325",
+      "name": "Send a photo message",
+      "webhookId": "b386c81c-e4fa-4a05-bbdc-b333f0fa0efb",
+      "credentials": {
+        "telegramApi": {
+          "id": "XLKk5TXG2awtcsbO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "message": "Here's your image! Please choose an option below and include your prompt. ",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Approved! process the video with following prompt",
+              "placeholder": "insert prompt here "
+            },
+            {
+              "fieldLabel": "Undo this edit and try again with the original image"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1696,
+        32
+      ],
+      "id": "08bfe865-7c1b-4bd5-a56e-2782051bd16f",
+      "name": "Send a text message and wait for response",
+      "webhookId": "b386c81c-e4fa-4a05-bbdc-b333f0fa0efb",
+      "credentials": {
+        "telegramApi": {
+          "id": "XLKk5TXG2awtcsbO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert AI agent responsible for processing user responses in an automation workflow. Your task is to analyze the given JSON input, identify the user’s chosen action (intent), and extract the corresponding prompt.  \n\nThe JSON input will always contain two keys. Only one of them may include a user-provided text prompt, while the other will be empty.\n\n1.If the key \"Undo this edit and try again with the original image\" contains a value, set the intent to \"RE-CREATE\".  \n2.If the key \"Approved! Process the video with the following prompt\" contains a value, set the intent to \"VIDEO\". \n\nYour output must be a single valid JSON object containing: \n-  `\"intent\": A string with one of three possible values – \n`\"EDIT\"`, `\"VIDEO\"`, or `\"RE-CREATE\"`.\n- `\"prompt\"`: The extracted text from the input. If the user has entered text, return it as their detailed creative instruction. If no text is provided, return an empty string.\n\n---\n\n**Example 1**\n**Input:**\n\n{\n  \"data\": {\n    \"Approved! Process the video with the following prompt:\": \"make it cinematic and dramatic\",\n    \"Undo this edit and try again with the original image:\": \"\"\n  }\n}\n\n\n**Output:**\n\n{\n  \"intent\": \"VIDEO\",\n  \"prompt\": \"make it cinematic and dramatic\"\n}\n\n\n**Example 2**\n**Input:**\n\n{\n  \"data\": {\n    \"Approved! Process the video with the following prompt:\": \"\",\n    \"Undo this edit and try again with the original image:\": \"change her shirt to blue\"\n  }\n}\n\n\n**Output:**\n\n{\n  \"intent\": \"RE-CREATE\",\n  \"prompt\": \"change her shirt to blue\"\n}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1904,
+        32
+      ],
+      "id": "e864bf9a-6b56-4525-b002-547b950522bc",
+      "name": "Approval processing"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1792,
+        240
+      ],
+      "id": "6c33c9bf-7e6d-465d-90d7-f47369164110",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "leRhbtUvoMwr9Z0k",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"intent\": \"RE-CREATE\",\n  \"prompt\": \"change her shirt to blue\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2048,
+        240
+      ],
+      "id": "06c5f45f-ef75-404b-9734-92cea9e53624",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.intent }}",
+                    "rightValue": "VIDEO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9e4ef31f-b33f-400b-b5d1-f434a506f624"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Create Video"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f02b38c1-e1cd-412d-909c-efb957aaba7e",
+                    "leftValue": "={{ $json.output.intent }}",
+                    "rightValue": "RE-CREATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Edit"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        2256,
+        32
+      ],
+      "id": "f409ae13-c4c7-43ca-b247-a2d7dfb96d2d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=We are working on your re edit request. \n\n\n\n\n{{ $json.output.prompt }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        208
+      ],
+      "id": "ba913af8-cdce-4e34-b281-486a326aaa85",
+      "name": "Send a text message1",
+      "webhookId": "c97f554f-6b9c-4eeb-9e1e-1e645a6fab26",
+      "credentials": {
+        "telegramApi": {
+          "id": "XLKk5TXG2awtcsbO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "05b81a3d-aeba-4621-8827-d25b23bea63b",
+              "name": "outputData",
+              "value": "={{ $('Edit Fields1').item.json.Image64String }}",
+              "type": "string"
+            },
+            {
+              "id": "ce464b05-fa18-4e67-82ea-9b60dac17af7",
+              "name": "prompt",
+              "value": "={{ $('Approval processing').item.json.output.prompt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        96
+      ],
+      "id": "0f43b32a-be93-4873-badc-0018a9ea2721",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f8e4d361-704d-4a72-bc2c-62131449d1a7",
+              "name": "outputData",
+              "value": "={{ $json.outputData }}",
+              "type": "string"
+            },
+            {
+              "id": "4386e181-e0a8-4e76-a142-68538b37925c",
+              "name": "prompt",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        -112
+      ],
+      "id": "b0e177b7-9364-4fad-930f-03f7ba4d951e",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "content": "# Getting the image from telegram\n",
+        "height": 752,
+        "width": 928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "78e36351-da25-4fcd-9f46-309252b196e0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Creating the image and feedback loop\n\n",
+        "height": 752,
+        "width": 2288,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        128,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "9b6fb06c-9885-4541-a7a6-b3bb04484de0",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f8e4d361-704d-4a72-bc2c-62131449d1a7",
+              "name": "FinalBase64",
+              "value": "={{ $('Edit Fields1').item.json.Image64String }}",
+              "type": "string"
+            },
+            {
+              "id": "4386e181-e0a8-4e76-a142-68538b37925c",
+              "name": "prompt",
+              "value": "={{ $json.output.prompt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2480,
+        16
+      ],
+      "id": "b71de67d-cbca-409c-a105-29069495e0a0",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "FinalBase64",
+        "binaryPropertyName": "GoogleCreatedImage",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2688,
+        -48
+      ],
+      "id": "19b1b95c-0dda-49df-a7ea-69f91cf18370",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "expiration",
+              "value": "600"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "GoogleCreatedImage"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2912,
+        -32
+      ],
+      "id": "d8b41459-d081-4b8b-98d6-4be3e4cf5c6f",
+      "name": "Upload img to imgBB fro url",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "Sv9OGqzWcwvW6p5W",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "=You are an expert AI cinematographer and storyteller. Your goal is to transform a single reference image and a short user-provided prompt into a vivid, cinematic description for an AI video generator.\n\nYou will always be given:\n\n1. A final scene image (URL).\n\n2. A simple user text prompt that expresses creative intent.\n\nYour task is to craft a single flowing paragraph that merges both inputs into a complete cinematic moment.\n\nGuidelines:\n\n- The user’s text prompt is the creative driver and must directly shape the scene’s action, tone, and mood.\n\n- Build a cohesive description that includes: setting, subject action, body language, environment details, camera framing, lens style, motion, lighting, art style, and overall atmosphere.\n\n- Keep the description natural, immersive, and visually striking.\n\n- Ensure it feels like a lived moment, not staged.\n\nYour output must be a detailed paragraph**, not a list.\n\n---\n\n** Example format (don’t reuse, only for style reference):**\n“In a lively street market at golden hour, a young man strolls past colorful stalls while sipping from a glass bottle, laughing as he looks at friends off-camera. Captured in a medium handheld shot with slight shake and uneven framing, th camera track his movement as warm sunlight flickers across his face. The atmosphere feels candid, raw, and joyful - imperfect like a casual iphone video, yet cinematic in its depth of color and mood.”\n\n___\n\nThe user's prompt is:\n{{ $('Edit Fields4').item.json.prompt }}",
+        "imageUrls": "={{ $json.data.url }}",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        3120,
+        -32
+      ],
+      "id": "b430ea92-6a64-478c-8092-59d7b7e550e7",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "leRhbtUvoMwr9Z0k",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.choices[0].message.content }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=## SYSTEM PROMPT: Veo3_fast UGC Video Generator\n\nYou are an expert UGC (User-Generated Content) AI director.\nYour mission: create realistic, natural 8-second video prompts for the Veo3_fast model.\n\nYou will be given:\n\n1. A reference image (URL or description).\n\n2. A short user text prompt with creative intent.\n\nYour job: turn these into casual, authentic video prompts that feel like real content captured by everyday people.\n\n---\n1. **Dialogue (≤150 characters):**\n   - Always casual, conversational, as if speaking to a friend.\n\n   - Must flow naturally across scenes if more than one is generated.\n\n    - Example tone: “honestly didn’t expect it to taste this good”\n\n2. **Action:**\n\n    - Describe what the character is doing in the scene (showing product, reacting, moving naturally).\n\n    -Keep actions simple and relatable — avoid staged posing.\n\n3. **Character:**\n\n    - Everyday people, 21–38 years old, diverse in gender/appearance.\n\n    - Natural flaws welcome: messy hair, casual clothing, imperfections.\n\n4. **Setting:**\n\n    - Realistic everyday locations: living room, car, park, street, café.\n\n    - Capture natural background details (clutter, people, environment).\n\n5. **Camera:**\n\n    - Must feel like amateur phone footage: uneven framing, slight shake, casual selfie, handheld panning.\n\n    - Keywords: amateur iPhone video, TikTok style, casual framing, natural daylight.\n\n6. **Emotion:**\n\n    - Authentic reactions only — excitement, curiosity, casual joy, surprise.\n\n    - No overacting or scripted vibe.\n\n7. **Scene Duration:**\n\n    - Each scene = ≈8 seconds exactly (Veo3_fast constraint).\n\n8. **Scene Count:**\n\n    - Calculate based on total duration requested by the user ÷ 8 seconds, round up.\n\n    - Always output exactly that many scenes.\n\n---\n###OUTPUT FORMAT\n\nReturn a JSON object with the structure provided.\n\nMake sure that the prompt is not having any double quotes or any other problem which can cause JSON to become invalid when used as a value.\n\nPrompt should be a lot in detail as per above instructions to create a stunning video with details about dialogue enviorenment etc.in proper, lengthy format.\n---\n###INPUTS\n\n– User Request –\n\n- The detailed user prompt:{{ $('Edit Fields4').item.json.prompt }}\n\n- The reference image description: {{ $json.choices[0].message.content }}\n\n\n---\nIMPORTANT\n\n- Do not create image prompts — only video prompts.\n- Do not exceed 150 characters for dialogue.\n-Always generate realistic, everyday ugc content."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3328,
+        -32
+      ],
+      "id": "cd8c525b-32fe-4f8a-8b3a-ec7f4d6209bf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"prompt\": \"generated_prompt\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3504,
+        176
+      ],
+      "id": "ac825988-fc8a-49e3-b02c-c03e2a1c8b73",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3280,
+        176
+      ],
+      "id": "7072d400-86fa-49d9-94c7-a61eaaa6380a",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "leRhbtUvoMwr9Z0k",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        3600,
+        144
+      ],
+      "id": "321fbf8f-52d7-4fb8-a9c1-cb8b909778e7",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 7fe9ffa6172648fa4e1fddb9d74f91d3"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Code in JavaScript1').item.json.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3952,
+        -32
+      ],
+      "id": "eac95b2f-924e-4a7a-94cd-b228010c040f",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prompt = $input.all()[0]?.json?.output?.prompt;\nconst imageUrl = $(\"Upload img to imgBB fro url\").all()[0]?.json?.data?.url;\n\nconst result = {\n  prompt: prompt,\n  imageUrls: [imageUrl],\n  model: \"veo3_fast\",\n  callBackUrl: \"http://your-callback-url.com/complete\",\n  aspectRatio: \"9:16\",\n  enableFallback: false,\n  enableTranslation: false,\n};\n\nreturn [{ json: result }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        -32
+      ],
+      "id": "d6b63344-c60d-497c-a103-83717ec14a4d",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "content": "## STEP 1 - GET API KEY (YOURAPIKEY)\n- Create an account [here](https://kie.ai/) and obtain API KEY.\n- It will be used in on form submission.\n- Important: Please keep your key safe and do not disclose it to others.",
+        "height": 120,
+        "width": 780
+      },
+      "id": "8fd97392-bf58-414b-9dc6-f6807984343a",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3744,
+        800
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Overview\nThis workflow utilizes the KIE.AI Veo3 model to generate AI-powered videos from either text descriptions or images. Users can interact through a simple form, providing a prompt (such as a scene description), an optional image URL for image-to-video generation, and selecting the desired video aspect ratio (16:9 or 9:16). The system automatically submits the request to the KIE.AI API, monitors the generation status in real time, and retrieves the final video output.This solution is ideal for content creators, marketers, educators, and developers who want to quickly create custom videos with minimal setup—whether from text, images, or both.\n\n\n## Prerequisites\n- A KIE. AI account and API key: Sign up at [KIE.AI](https://kie.ai) to obtain your free or paid API key.\n- An active n8n instance (cloud or self-hosted) with HTTP Request and form submission capabilities.\n- Basic knowledge of AI prompts for video generation to achieve optimal results.\n- (Optional) An image URL if you want to use image-to-video generation.\n\n## Setup Instructions\n1.  **Obtain API Key**: Register at KIE. AI and generate your API key.  Store it securely—do not share it publicly.\n2.  **Configure the Form**: In the \"On Form Submission\" node, ensure the following fields are set up:prompt (video description),img_url (optional, for image-to-video),aspectRatio (choose between 16:9 and 9:16),api_key.\n3.  **Test the Workflow**:\n    - Click \"Execute Workflow\" in n8n.\n    - Access the generated form URL, submit your prompt and API key.\n    - The workflow will poll the API every 10 seconds until the video is ready, then display the results.\n4.  **Handle Outputs**: The final node formats and displays the video file URL for download or embedding.\n\n## Customization Tips\n- **Enhance Prompts**: Include specifics like duration, style (e.g., realistic, animated), actions, and visual elements to improve AI video quality.\n\n- **Keywords for SEO**: This template focuses on AI video generation, text-to-video models, Veo3 API integration, and automated workflows.\n\n\n",
+        "height": 760,
+        "width": 780,
+        "color": 3
+      },
+      "id": "c0d99d06-39fe-44e1-9e4a-5d187f350a4e",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2928,
+        848
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "AI video generator",
+        "formDescription": "Please fill in the following information to generate your video",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "prompt",
+              "placeholder": "a happy dog"
+            },
+            {
+              "fieldLabel": "img_url [optional]",
+              "placeholder": "http://example.com/image1.jpg"
+            },
+            {
+              "fieldLabel": "aspectRatio [16:9,9:16]",
+              "placeholder": "[16:9,9:16]"
+            },
+            {
+              "fieldLabel": "api_key",
+              "placeholder": "47f33b46************************1253\t"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5979ba26-b43a-4a1e-bcd5-db8f75ec38b5",
+      "name": "Submit Text Prompt for Video Generation",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        2992,
+        1328
+      ],
+      "webhookId": "791b190b-2acc-4d10-b593-c1929e67686c",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.api_key}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{$json.prompt}}\",\n  \"model\": \"veo3\",\n  \"watermark\": \"\",\n  \"imageUrls\": [\"{{$json[\"img_url [optional]\"]}}\"],\n  \"callBackUrl\": \"https://api.example.com/callback\",\n  \"aspectRatio\": \"{{ $json[\"aspectRatio [16:9,9:16]\"] }}\",\n  \"seeds\": 12345\n}",
+        "options": {}
+      },
+      "id": "e47d2f82-c1b6-40f2-b105-0896b1086a0f",
+      "name": "Send Video Generation Request to KIE.AI API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3232,
+        1312
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "f1ca625f-8b29-423f-a82e-c086131e4a43",
+      "name": "Wait for Video Processing Completion",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3472,
+        1312
+      ],
+      "webhookId": "bb6c2821-9586-44b7-8606-2ee69a77ed75",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{$json.data.taskId}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$node[\"Submit Text Prompt for Video Generation\"].json[\"api_key\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7fafbcfa-4a5a-4301-aa5b-40f6512112ea",
+      "name": "Obtain the generated status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3696,
+        1312
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "db9a5dec-997b-4c3f-9582-37c9bbeb19ff",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "=true",
+              "rightValue": "={{ $json.data.successFlag == 1 }}"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "aa13634a-bece-4add-b79a-d222ee6002a7",
+      "name": "Check if Video Generation is Complete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3536,
+        1536
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa5f375f-cddc-4f7b-a018-67c28015d18b",
+              "name": "resultUrls",
+              "type": "string",
+              "value": "={{$json.data.response.resultUrls}}"
+            },
+            {
+              "id": "8f93e12e-13da-495f-a686-c0abc22f39d9",
+              "name": "",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "744f424a-83eb-45e2-9a4f-c6e289336a11",
+      "name": "Format and Display Video Results",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3888,
+        1520
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "content": "## STEP 2 - Usage Process\n1. **Start Workflow** - Click \"Execute workflow\" button to begin the task.\n2. **Fill Form** - Complete the required fields in the popup form.\n3. **Submit - Click** \"Submit\" button to send your request.\n4. **Close Window** - You can close the form window after successful submission.\n5. **Wait for Generation** - System automatically checks status every 10 seconds.\n6. **Get Results** - Video files will be displayed automatically when generation is complete.",
+        "height": 180,
+        "width": 780
+      },
+      "id": "9d6d83a1-b8ff-426c-85dd-ebb983c8509e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3744,
+        944
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## STEP 3 - Form Parameters\n1. **Prompt** (Video Description)\n    - Purpose: Describe the video content you want to generate.\n    - Example: \"A dog playing in a park\".\n    - Tips:\n    Be detailed and specific in describing video content.\n    Include actions, scenes, and style information.\n    Describe movements and visual elements you want to see.\n    More detailed descriptions lead to better results.\n2. **img_url** (Image-to-Video, Optional)\n    - Purpose: Provide an image URL to generate a video based on the image content (image-to-video).               If left blank, the workflow will generate a video purely from the text prompt (text-to-video).\n    - Example: https://file.example.com/your-image.jpg\n    - Tips:\n    Use a clear and relevant image to guide the video generation.\n    If both prompt and image are provided, the AI will combine both for richer results.\n    If only prompt is provided, the workflow will perform text-to-video generation as before.\n3. **aspectRatio** (Video Aspect Ratio)\n    - Purpose: Select the aspect ratio for the generated video.\n    - Options: 16:9 or 9:16 .\n4. **api_key** (API Key)\n    - This is what you get in the first step.\n",
+        "height": 520,
+        "width": 780
+      },
+      "id": "30fd1e80-2359-43e1-b8e8-b7ccbb0386b7",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3824,
+        1168
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "AI video generator",
+        "formDescription": "Please fill in the following information to generate your video",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "prompt",
+              "placeholder": "a happy dog"
+            },
+            {
+              "fieldLabel": "img_url [optional]",
+              "placeholder": "http://example.com/image1.jpg"
+            },
+            {
+              "fieldLabel": "aspectRatio [16:9,9:16]",
+              "placeholder": "[16:9,9:16]"
+            },
+            {
+              "fieldLabel": "api_key",
+              "placeholder": "47f33b46************************1253\t"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "978312bd-ad92-4a1d-a28f-e417e653e3da",
+      "name": "Submit Text Prompt for Video Generation1",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        4720,
+        1376
+      ],
+      "webhookId": "1e029ece-18fc-4879-97e4-dacc69ad4bfc",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.api_key}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{$json.prompt}}\",\n  \"model\": \"veo3\",\n  \"watermark\": \"\",\n  \"imageUrls\": [\"{{$json[\"img_url [optional]\"]}}\"],\n  \"callBackUrl\": \"https://api.example.com/callback\",\n  \"aspectRatio\": \"{{ $json[\"aspectRatio [16:9,9:16]\"] }}\",\n  \"seeds\": 12345\n}",
+        "options": {}
+      },
+      "id": "4e0d02f8-0a71-40e2-92fa-86ba9075add2",
+      "name": "Send Video Generation Request to KIE.AI API1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4992,
+        1296
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "a202a23e-0693-4235-8307-290bf869d752",
+      "name": "Wait for Video Processing Completion1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        4160,
+        -64
+      ],
+      "webhookId": "bb6c2821-9586-44b7-8606-2ee69a77ed75",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{$json.data.taskId}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$node[\"Submit Text Prompt for Video Generation1\"].json[\"api_key\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d71c5eed-0cec-41e3-9169-6ef6fc1bbde2",
+      "name": "Obtain the generated status1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4368,
+        -80
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "db9a5dec-997b-4c3f-9582-37c9bbeb19ff",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "=true",
+              "rightValue": "={{ $json.data.successFlag == 1 }}"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "745ca6a7-f3b1-47e0-a57b-fbe7f8a5bb4e",
+      "name": "Check if Video Generation is Complete1",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4240,
+        192
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa5f375f-cddc-4f7b-a018-67c28015d18b",
+              "name": "resultUrls",
+              "type": "string",
+              "value": "={{$json.data.response.resultUrls}}"
+            },
+            {
+              "id": "8f93e12e-13da-495f-a686-c0abc22f39d9",
+              "name": "chatid",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f3330b3-8e14-46cc-97f9-703c7729de73",
+      "name": "Format and Display Video Results1",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        4480,
+        144
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "1813576672",
+        "file": "https://tempfile.aiquickdraw.com/p/b3e6e0c78cc08d1d8452606d663c6bab_1760448251.mp4",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4720,
+        16
+      ],
+      "id": "320dca6d-27e2-4b50-8ddb-9d589e1295b2",
+      "name": "Send a video",
+      "webhookId": "24be943f-fba0-41e2-968c-8fbc6dbe3efa",
+      "credentials": {
+        "telegramApi": {
+          "id": "XLKk5TXG2awtcsbO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Create  video from veo3 via kie.ai\n",
+        "height": 752,
+        "width": 2480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "af0d41e7-8eb2-4599-b750-5d7590cbf739",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Nano banana API call": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Approval processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Approval processing",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Approval processing",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval processing": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Google Nano banana API call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Google Nano banana API call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Upload img to imgBB fro url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload img to imgBB fro url": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Wait for Video Processing Completion1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtain the generated status": {
+      "main": [
+        [
+          {
+            "node": "Check if Video Generation is Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Video Processing Completion": {
+      "main": [
+        [
+          {
+            "node": "Obtain the generated status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Video Generation is Complete": {
+      "main": [
+        [
+          {
+            "node": "Format and Display Video Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Video Processing Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Text Prompt for Video Generation": {
+      "main": [
+        [
+          {
+            "node": "Send Video Generation Request to KIE.AI API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Video Generation Request to KIE.AI API": {
+      "main": [
+        [
+          {
+            "node": "Wait for Video Processing Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Text Prompt for Video Generation1": {
+      "main": [
+        [
+          {
+            "node": "Send Video Generation Request to KIE.AI API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Video Generation Request to KIE.AI API1": {
+      "main": [
+        []
+      ]
+    },
+    "Wait for Video Processing Completion1": {
+      "main": [
+        [
+          {
+            "node": "Obtain the generated status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtain the generated status1": {
+      "main": [
+        [
+          {
+            "node": "Check if Video Generation is Complete1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Video Generation is Complete1": {
+      "main": [
+        [
+          {
+            "node": "Format and Display Video Results1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Video Processing Completion1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format and Display Video Results1": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "529e9e65-245a-4483-a337-311e62963933",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c52eef2a007894921a8cf07329cc70ab2e127bc8efdd902c0ee3188088b14bfc"
+  },
+  "id": "c9YxUGBCq4t3TRIE",
+  "tags": []
+}
