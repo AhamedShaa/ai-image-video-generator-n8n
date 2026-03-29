@@ -37,8 +37,8 @@ generation, and video synthesis — all running autonomously!
 
 ## 📸 Screenshots
 
-### n8n Workflow Overview
-![n8n Workflow](screenshots/n8n-workflow.png)
+### Image editing Overview
+![Image editing](screenshots/Image-editing.png)
 
 ### Telegram Bot — Image Upload & Edit
 ![Telegram Image Edit](screenshots/telegram-image-edit.png)
